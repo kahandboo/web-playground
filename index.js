@@ -172,10 +172,10 @@ app.post('/signup', async (req, res) => {
 
 app.post('/post', (req, res) => {
     const { title, content } = req.body;
-    const id = req.session.userId;
-    const user = users[id];
+    const userId = req.session.userId;
+    const user = users[userId];
     const username = user.username;
-    posts.push({ title, content, username });
+    posts.push({ title, content, username, userId });
     res.redirect('/posts');
 });
 
@@ -183,3 +183,13 @@ app.get('/posts', (req, res) => {
     res.render('posts', { posts: posts });
 });
 
+app.post('/post/delete/:idx', (req, res) => {
+    const idx = req.params.idx;
+
+    if (posts[idx].userId != req.session.userId) {
+        return res.render('posts', { posts: posts });
+    }
+
+    posts.splice(idx, 1);
+    res.redirect('/posts');
+});
