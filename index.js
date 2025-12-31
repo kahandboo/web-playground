@@ -76,6 +76,7 @@ app.use(session({
     saveUninitialized: false,
     cookie: { 
         httpOnly: true,
+        sameSite: 'lax',
         secure: false
     },
     name: 'session-cookie'
@@ -88,7 +89,13 @@ app.get('/', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-    res.sendFile(__dirname + '/views/login.html');
+    const error = req.query.error;
+    let message = "";
+    if (error === 'auth') {
+        message = "아이디 또는 비밀번호가 올바르지 않습니다.";
+    }
+
+    res.render('login', { errorMessage: message });
 });
 
 app.post('/login', async (req, res) => {
@@ -96,12 +103,12 @@ app.post('/login', async (req, res) => {
     const user = users[id];
 
     if (!user) {
-        return res.redirect('/login');
+        return res.redirect('/login?error=auth');
     }
 
     const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) {
-        return res.redirect('/login');
+        return res.redirect('/login?error=auth');
     }
 
     req.session.regenerate(err => {
