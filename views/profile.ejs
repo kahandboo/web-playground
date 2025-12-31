@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <h1>회원정보</h1>
+        <form method="POST" action="/profile/username">
+            <p>현재 닉네임</p>
+            <p><%= profile.username %></p>
+            <p>변경 닉네임</p>
+            <input type="text" name="username" placeholder="닉네임" />
+            <button type="submit">변경</button>
+        </form>
+    </body>
+</html>

@@ -179,6 +179,24 @@ app.post('/post', (req, res) => {
     res.redirect('/posts');
 });
 
+app.get('/profile', (req, res) => {
+    const userId = req.session.userId;
+    const user = users[userId];
+    
+    res.render('profile', { profile: user });
+});
+
+app.post('/profile/username', (req, res) => {
+    const userId = req.session.userId;
+    const { username } = req.body;
+    if (!validateUsername(username)) {
+        return res.redirect('/profile?error=name');
+    }
+
+    users[userId].username = username;
+    res.redirect('/');
+});
+
 app.get('/posts', (req, res) => {
     res.render('posts', { posts: posts });
 });
