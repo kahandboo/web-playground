@@ -2,12 +2,39 @@ const { render } = require('ejs');
 const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
+const sqlite3 = require('sqlite3');
+const { open } = require('sqlite');
 const app = express();
 
 const ID_REGEX = /^[a-z0-9]{4,10}$/;
 const USERNAME_REGEX = /^[a-zA-Z0-9가-힣]{2,10}$/;
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-]).{8,32}$/;
 
+let db;
+
+(async () => {
+    db = await open({
+        filename: './db/database.db',
+        driver: sqlite3.Database
+    });
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            username TEXT NOT NULL,
+            passwordHash TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS posts (
+            idx INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            userId TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
+    console.log("SQLite DB 연결 완료");
+})();
 
 const myLogger = (req, res, next) => {
     const openPaths = ['/login', '/signup'];
@@ -28,28 +55,22 @@ async function hashPassword(password) {
     return hashedPassword;
 }
 
-function validateUsername(username) {
-    if (Object.values(users).some(user => user.username === username)) {
-        return false;
-    }
-
+async function validateUsername(username) {
     if (!USERNAME_REGEX.test(username)) {
         return false;
-    }
+    }    
 
-    return true;
+    const user = await db.get('SELECT id FROM users WHERE username = ?', [username]);
+    return !user;
 }
 
-function validateId(id) {
-    if (users[id]) {
-        return false;
-    }
-
+async function validateId(id) {
     if (!ID_REGEX.test(id)) {
         return false;
     }
 
-    return true;
+    const user = await db.get('SELECT id FROM users WHERE id = ?', [id]);
+    return !user;
 }
 
 function validatePassword(password) {
@@ -59,9 +80,6 @@ function validatePassword(password) {
 
     return true;
 }
-
-const posts = [];
-const users = {};
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
@@ -100,7 +118,7 @@ app.get('/login', (req, res) => {
 
 app.post('/login', async (req, res) => {
     const { id, password } = req.body;
-    const user = users[id];
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [id]);
 
     if (!user) {
         return res.redirect('/login?error=auth');
@@ -148,11 +166,11 @@ app.get('/signup', (req, res) => {
 
 app.post('/signup', async (req, res) => {
     const { username, id, password } = req.body;
-    if (!validateUsername(username)) {
+    if (!(await validateUsername(username))) {
         return res.redirect('/signup?error=name');
     }
 
-    if (!validateId(id)) {
+    if (!(await validateId(id))) {
         return res.redirect('/signup?error=id');
     }
 
@@ -161,53 +179,81 @@ app.post('/signup', async (req, res) => {
     }
 
     const hashedPassword = await hashPassword(password);
-    users[id] = { 
-        username: username,
-        passwordHash: hashedPassword
-    };
-    console.log(users);
-
-    return res.redirect('/login')
+    try {
+        await db.run(
+            'INSERT INTO users (id, username, passwordHash) VALUES (?, ?, ?)',
+            [id, username, hashedPassword]
+        );
+        res.redirect('/login');
+    } catch (err) {
+        res.status(500).send("이미 존재하는 아이디거나 오류가 발생했습니다.");
+    }
 });
 
-app.post('/post', (req, res) => {
+app.post('/post', async (req, res) => {
     const { title, content } = req.body;
     const userId = req.session.userId;
-    const user = users[userId];
-    const username = user.username;
-    posts.push({ title, content, username, userId });
+
+    await db.run(
+        'INSERT INTO posts (title, content, userId) VALUES (?, ?, ?)',
+        [title, content, userId]
+    );
     res.redirect('/posts');
 });
 
-app.get('/profile', (req, res) => {
+app.get('/profile', async (req, res) => {
     const userId = req.session.userId;
-    const user = users[userId];
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [userId]);
     
     res.render('profile', { profile: user });
 });
 
-app.post('/profile/username', (req, res) => {
+app.post('/profile/username', async (req, res) => {
     const userId = req.session.userId;
     const { username } = req.body;
-    if (!validateUsername(username)) {
+    if (!(await validateUsername(username))) {
         return res.redirect('/profile?error=name');
     }
 
-    users[userId].username = username;
-    res.redirect('/');
+    try {
+        await db.run(
+            'UPDATE users SET username = ? WHERE id = ?',
+            [username, userId]
+        );
+
+        res.redirect('/');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("닉네임 변경 중 오류가 발생했습니다.");
+    }
 });
 
-app.get('/posts', (req, res) => {
+app.get('/posts', async (req, res) => {
+    const query = `
+        SELECT 
+            posts.idx, 
+            posts.title, 
+            posts.content, 
+            posts.userId, 
+            users.username 
+        FROM posts 
+        JOIN users ON posts.userId = users.id 
+        ORDER BY posts.idx DESC
+    `;
+    const posts = await db.all(query);
     res.render('posts', { posts: posts });
 });
 
-app.post('/post/delete/:idx', (req, res) => {
+app.post('/post/delete/:idx', async (req, res) => {
     const idx = req.params.idx;
+    const userId = req.session.userId;
 
-    if (posts[idx].userId != req.session.userId) {
-        return res.render('posts', { posts: posts });
+    const post = await db.get('SELECT userId FROM posts WHERE idx = ?', [idx]);
+
+    if (!post || post.userId !== userId) {
+        return res.redirect('/posts');
     }
 
-    posts.splice(idx, 1);
+    await db.run('DELETE FROM posts WHERE idx = ?', [idx]);
     res.redirect('/posts');
 });
