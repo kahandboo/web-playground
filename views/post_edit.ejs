@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <h1>게시글 수정</h1>
+        <form method="POST" action="/post/edit/<%= post.idx %>">
+            <input name="title" value="<%= post.title %>" required/>
+            <textarea name="content" required><%= post.content %></textarea>
+            <button type="submit">수정</button>
+            <a href="/posts">취소</a>
+        </form>
+    </body>
+</html>

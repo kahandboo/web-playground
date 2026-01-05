@@ -37,7 +37,7 @@ let db;
 })();
 
 const myLogger = (req, res, next) => {
-    const openPaths = ['/login', '/signup'];
+    const openPaths = ['/login', '/signup','/posts', '/'];
 
     if (openPaths.includes(req.path)) {
         return next();
@@ -100,10 +100,16 @@ app.use(session({
     name: 'session-cookie'
 }));
 
+app.use((req, res, next) => {
+    res.locals.isLoggedIn = req.session.isLoggedIn;
+    res.locals.userId = req.session.userId;
+    next();
+});
+
 app.use(myLogger);
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/views/index.html');
+    res.redirect('/posts');
 });
 
 app.get('/login', (req, res) => {
@@ -190,6 +196,10 @@ app.post('/signup', async (req, res) => {
     }
 });
 
+app.get('/post', (req, res) => {
+    res.render('post');
+})
+
 app.post('/post', async (req, res) => {
     const { title, content } = req.body;
     const userId = req.session.userId;
@@ -255,5 +265,47 @@ app.post('/post/delete/:idx', async (req, res) => {
     }
 
     await db.run('DELETE FROM posts WHERE idx = ?', [idx]);
+    res.redirect('/posts');
+});
+
+app.get('/post/edit/:idx', async (req, res) => {
+    const idx = req.params.idx;
+    const userId = req.session.userId;
+
+    const post = await db.get(
+        'SELECT idx, title, content, userId FROM posts WHERE idx = ?',
+        [idx]
+    );
+
+    if (!post) {
+        return res.redirect('/posts');
+    }
+
+    if (post.userId !== userId) {
+        return res.redirect('/posts');
+    }
+
+    res.render('post_edit', { post });
+});
+
+app.post('/post/edit/:idx', async (req, res) => {
+    const idx = req.params.idx;
+    const userId = req.session.userId;
+    const { title, content } = req.body;
+
+    const post = await db.get(
+        'SELECT userId FROM posts WHERE idx = ?',
+        [idx]
+    );
+
+    if (!post || post.userId !== userId) {
+        return res.redirect('/posts');
+    }
+
+    await db.run(
+        'UPDATE posts SET title = ?, content = ? WHERE idx = ?',
+        [title, content, idx]
+    );
+
     res.redirect('/posts');
 });
