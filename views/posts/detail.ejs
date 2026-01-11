@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>게시글 상세 페이지</title>
+    </head>
+    <body>
+        <h1>게시글 상세 페이지</h1>
+
+        <div>
+            <h2><%= post.title %></h2>
+            <p><%= post.username %></p>
+            <p><%= post.content %></p>
+            <a href="/posts/edit/<%= post.idx %>">수정</a>
+            <form method="POST" action="/posts/delete/<%= post.idx %>">
+                <button type="submit" onclick="return confirm('삭제하시겠습니까?')">삭제</button>
+            </form> 
+        </div>
+        
+        <a href="/posts">목록</a>
+
+        <% if (!isLoggedIn) { %>
+            <a href="/login">로그인</a>
+        <% } else { %>
+            <a href="/posts/write">글쓰기</a>
+            <a href="/profile">회원정보</a>
+            <form method="POST" action="/logout" style="display:inline;">
+                <button type="submit">로그아웃</button>
+            </form>
+        <% } %>
+    </body>
+</html>

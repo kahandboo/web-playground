@@ -254,6 +254,23 @@ app.get('/posts', async (req, res) => {
     res.render('posts/list', { posts: posts });
 });
 
+app.get('/posts/detail/:idx', async (req, res) => {
+    const idx = req.params.idx;
+    const post = await db.get(`
+        SELECT
+            posts.idx, 
+            posts.title, 
+            posts.content, 
+            posts.userId,
+            users.username
+        FROM posts
+        JOIN users ON posts.userId = users.id
+        WHERE idx = ?`
+        , [idx]);
+
+    res.render('posts/detail', { post: post });
+});
+
 app.post('/posts/delete/:idx', async (req, res) => {
     const idx = req.params.idx;
     const userId = req.session.userId;
