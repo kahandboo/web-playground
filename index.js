@@ -196,11 +196,11 @@ app.post('/signup', async (req, res) => {
     }
 });
 
-app.get('/post', (req, res) => {
-    res.render('post');
+app.get('/posts/write', (req, res) => {
+    res.render('posts/write');
 })
 
-app.post('/post', async (req, res) => {
+app.post('/posts/write', async (req, res) => {
     const { title, content } = req.body;
     const userId = req.session.userId;
 
@@ -251,10 +251,10 @@ app.get('/posts', async (req, res) => {
         ORDER BY posts.idx DESC
     `;
     const posts = await db.all(query);
-    res.render('posts', { posts: posts });
+    res.render('posts/list', { posts: posts });
 });
 
-app.post('/post/delete/:idx', async (req, res) => {
+app.post('/posts/delete/:idx', async (req, res) => {
     const idx = req.params.idx;
     const userId = req.session.userId;
 
@@ -268,7 +268,7 @@ app.post('/post/delete/:idx', async (req, res) => {
     res.redirect('/posts');
 });
 
-app.get('/post/edit/:idx', async (req, res) => {
+app.get('/posts/edit/:idx', async (req, res) => {
     const idx = req.params.idx;
     const userId = req.session.userId;
 
@@ -285,10 +285,10 @@ app.get('/post/edit/:idx', async (req, res) => {
         return res.redirect('/posts');
     }
 
-    res.render('post_edit', { post });
+    res.render('posts/edit', { post });
 });
 
-app.post('/post/edit/:idx', async (req, res) => {
+app.post('/posts/edit/:idx', async (req, res) => {
     const idx = req.params.idx;
     const userId = req.session.userId;
     const { title, content } = req.body;

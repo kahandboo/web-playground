@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>게시글 목록</title>
+    </head>
+    <body>
+        <h1>게시글 목록</h1>
+
+        <% posts.forEach((post, idx) => { %>
+            <div>
+                <h2>
+                    <a href="/posts/detail/<%= post.idx %>">
+                        <%= post.title %>
+                    </a>
+                </h2>
+                <p>작성자 <%= post.username %></p>
+            </div>
+            <hr>
+        <% }); %>
+
+        <a href="/write">글쓰기</a>
+        <a href="../profile">회원정보</a>
+        <% if (!isLoggedIn) { %>
+            <a href="../login">로그인</a>
+        <% } else { %>
+            <form method="POST" action="/logout" style="display:inline;">
+                <button type="submit">로그아웃</button>
+            </form>
+        <% } %>
+    </body>
+</html>
