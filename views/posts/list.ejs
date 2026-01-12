@@ -17,6 +17,11 @@
             </div>
             <hr>
         <% }); %>
+        
+        <% if (currentPage > 1) {%>
+            <a href="/posts?page=<%= currentPage-1 %>">이전</a>
+        <% } %>
+        <a href="/posts?page=<%= currentPage+1 %>">다음</a>
 
         <% if (!isLoggedIn) { %>
             <a href="/login">로그인</a>

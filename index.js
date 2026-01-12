@@ -239,6 +239,12 @@ app.post('/profile/username', async (req, res) => {
 });
 
 app.get('/posts', async (req, res) => {
+    let page = Number(req.query.page);
+    if (!page || page < 1) page = 1;
+
+    const limit = 5;
+    const offset = (page - 1) * limit;
+
     const query = `
         SELECT 
             posts.idx, 
@@ -249,9 +255,10 @@ app.get('/posts', async (req, res) => {
         FROM posts 
         JOIN users ON posts.userId = users.id 
         ORDER BY posts.idx DESC
+        LIMIT ? OFFSET ?
     `;
-    const posts = await db.all(query);
-    res.render('posts/list', { posts: posts });
+    const posts = await db.all(query, [limit, offset]);
+    res.render('posts/list', { posts: posts, currentPage: page });
 });
 
 app.get('/posts/detail/:idx', async (req, res) => {
