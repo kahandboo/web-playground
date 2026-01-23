@@ -8,9 +8,10 @@ const app = express();
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
+require('dotenv').config();
 
 app.use(session({
-  secret: 'mySecretKey',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -23,8 +24,9 @@ app.use(session({
 
 app.use(localsMiddleware);
 
-app.use('/', require('./routes/auth')); 
+app.use('/', require('./routes/auth'));
 app.use('/', require('./routes/index'));
+app.use('/admin', require('./routes/admin'));
 app.use('/posts', require('./routes/posts'));
 app.use('/profile', authMiddleware, require('./routes/profile'));
 
