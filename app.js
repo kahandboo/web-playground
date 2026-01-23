@@ -26,7 +26,6 @@ app.use(localsMiddleware);
 
 app.use('/', require('./routes/auth'));
 app.use('/', require('./routes/index'));
-app.use('/admin', require('./routes/admin'));
 app.use('/posts', require('./routes/posts'));
 app.use('/profile', authMiddleware, require('./routes/profile'));
 
