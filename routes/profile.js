@@ -4,7 +4,7 @@ const { isValidUsername } = require('../utils/validators');
 
 const router = express.Router();
 
-router.get('/profile', async (req, res) => {
+router.get('/', async (req, res) => {
   const db = getDB();
   const userId = req.session.userId;
   const user = await db.get('SELECT * FROM users WHERE id = ?', [userId]);
@@ -12,7 +12,7 @@ router.get('/profile', async (req, res) => {
   res.render('profile', { profile: user });
 });
 
-router.post('/profile/username', async (req, res) => {
+router.post('/username', async (req, res) => {
   const db = getDB();
   const userId = req.session.userId;
   const { username } = req.body;
