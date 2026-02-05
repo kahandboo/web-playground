@@ -19,6 +19,6 @@ jobs:
           script: |
             cd ~/web-playground
             git pull origin main
-            npm install
-            pm2 restart board
+            npm ci
+            pm2 restart board-server
 # redeploy trigger
